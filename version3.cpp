@@ -68,19 +68,29 @@ void *reader(void *args) {
   
   printf("+++ Thread OF READ tid[%ld] invoked!! %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
   // sem_wait(&stock_semaphore);
-  stock_mutex.lock();
+  cont_op_semaphore.lock();
   
+  cont_op ++;
+  if (cont_op == 1) {
+    stock_mutex.lock();
+  }
+
   printf("--> Thread OF READ tid[%ld] starting!! ** ENTERING CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
   sleep(2);
   
   time_now();
   printf("__TID[%ld]__ %d:%d:%d\tReading data from PRODUCT_ID=[%d]. AMOUNT=[%d]\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec, product_id, stock[product_id].amount);
   
+  cont_op --;
+  if (cont_op == 0) {
+    stock_mutex.unlock();
+  }
+
   time_now();
   printf("XXX Thread OF READ tid[%ld] finished!! ** LEFTING  CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
   
   // sem_post(&stock_semaphore);
-  stock_mutex.unlock();
+  cont_op_semaphore.unlock();
   
   pthread_exit(NULL);  
 }
@@ -104,20 +114,9 @@ void *writer(void *args) {
   printf("--> Thread OF WRITE tid[%ld] starting!! ** ENTERING CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
   // sleep((rand() % 20 + 1));
   sleep(4);
-  
-  cont_op ++;
-  if (cont_op == 1) {
-    cont_op_semaphore.lock();
-  }
-
   time_now();
   printf("__TID[%ld]__ %d:%d:%d\t Writing data from PRODUCT_ID=[%d]. AMOUNT=[%d] -> [%d]\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec, product_id, stock[product_id].amount, stock[product_id].amount + quantity);
   stock[product_id].amount += quantity;
-
-  cont_op --;
-  if (cont_op == 0) {
-    cont_op_semaphore.unlock();
-  }
 
   time_now();
   printf("XXX Thread OF WRITE tid[%ld] finished!! ** LEFTING  CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
@@ -138,7 +137,7 @@ int main() {
   int stopper_flag;
   int product_target = 1;
   // 0 read, 1 write
-  int type_threads[] = { 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0};
+  int type_threads[] = { 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0};
   
   for (int i = 0; i < 5; i++) {
     if (type_threads[i] == 1) {
