@@ -5,4 +5,4 @@ v2:
 	g++ -pthread version2.cpp -o output && ./output
 
 v3:
-	g++ -pthread version3.cpp -o output && ./output
+	g++ -pthread version3.cpp -o output && ./output < input

@@ -164,6 +164,7 @@ int main() {
   }
   
   for(int i = 0; i < STORES; i++) {
+    cout << "i: " << i << endl;
     pthread_join(stores[i], NULL);
   }
   cout << "All threads completed." << endl;

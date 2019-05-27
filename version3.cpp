@@ -26,8 +26,6 @@ struct tm * timeinfo;
 static sem_t stock_semaphore;
 static mutex stock_mutex;
 static mutex cont_op_semaphore;
-int writers = 0;
-int readers = 0;
 int cont_op = 0;
 
 void time_now() {
@@ -59,7 +57,6 @@ void printStock() {
 struct Thread_Args {
   long thread_id;
   int product_id = -1; // -1 if is not to read
-  int type_operation;
   int quantity;
 };
 
@@ -69,7 +66,6 @@ void *reader(void *args) {
   
   long thread_id = arguments.thread_id;
   int product_id = arguments.product_id;
-  
   time_now();
   // Thread start
   
@@ -141,51 +137,62 @@ int main() {
     Cada loja compradora de Product será uma thread.
   */
   srand(time(NULL));
-  pthread_t stores[STORES];
   int stopper_flag;
   int product_target = 1;
-  // 0 read, 1 write
-  int type_threads[] = { 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0};
-  
-  for (int i = 0; i < 5; i++) {
-    if (type_threads[i] == 1) {
-      writers ++;
-    } else {
-      readers ++;
-    }
+  int readers;
+  int writers;
+  cin >> readers >> writers;
+  printf("\nNumber of readers: %d\tNumber of writers: %d\n\n", readers, writers);
+
+  int max_threads = readers + writers;
+  pthread_t stores[max_threads];
+  int writes_op[writers]; // values of change the amount
+
+  for (int i = 0; i < writers; ++i) {
+    cin >> writes_op[i];
   }
 
   initStock();
   printStock();
 
   printf("\n**** starting main ****\n\n");
-  sem_init(&stock_semaphore, 0, 1);
   Thread_Args args;
 
-  for(int i = 0; i < STORES; ++i) {
-    int random_amount = (rand() % 10 + 1) % 2 == 0 ? -1 * (rand() % 10 + 1) : (rand() % 10 + 1) % 2; // random add or remove from -10 to 10
-    random_amount ++;
+  int tid = 0; // var to control thread id through w and r
+
+  for(int i = 0; i < readers; ++i) {
     args = {
-      i,
+      tid,
       product_target,
-      // (rand() % 10 + 1) % 2, // random operation
-      type_threads[i],
-      random_amount, 
     };
 
-    if (args.type_operation % 2 == 0)
-      stopper_flag = pthread_create(&stores[i], NULL, reader, &args);
-    else
-      stopper_flag = pthread_create(&stores[i], NULL, writer, &args);
+    stopper_flag = pthread_create(&stores[tid], NULL, reader, &args);
 
     if (stopper_flag != 0) {
-      cout << "Error creating thread " << i << ". Return code:" << stopper_flag <<  endl;
+      cout << "Error creating thread " << tid << ". Return code:" << stopper_flag <<  endl;
     }
-
+    tid++;
     sleep(0.0005);
   }
-  
-  for(int i = 0; i < STORES; i++) {
+
+  for(int i = 0; i < writers; ++i) {
+    args = {
+      tid,
+      product_target,
+      writes_op[i], 
+    };
+
+    stopper_flag = pthread_create(&stores[tid], NULL, writer, &args);
+
+    if (stopper_flag != 0) {
+      cout << "Error creating thread " << tid << ". Return code:" << stopper_flag <<  endl;
+    }
+
+    tid++;
+    sleep(0.0005);
+  }
+
+  for(int i = 0; i < max_threads; i++) {
     pthread_join(stores[i], NULL);
   }
   cout << "All threads completed." << endl;
