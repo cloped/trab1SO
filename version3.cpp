@@ -2,22 +2,26 @@
 #include <cstdio>
 #include <pthread.h>
 #include <unistd.h>
+#include <mutex>
 #include <time.h>
 #include <ctime>    // For time()
 #include <cstdlib>  // For srand() and rand()
 #include <semaphore.h>
-#include <mutex>
 
 using namespace std;
 
 #define STOCK_SIZE 5
 #define DEFAULT_AMOUNT 40
-#define STORES 12
+#define STORES 12 
 
 time_t rawtime;
 struct tm * timeinfo;
 static sem_t stock_semaphore;
 static mutex stock_mutex;
+static mutex cont_op_semaphore;
+int writers = 0;
+int readers = 0;
+int cont_op = 0;
 
 void time_now() {
   time (&rawtime);
@@ -98,13 +102,23 @@ void *writer(void *args) {
   stock_mutex.lock();
 
   printf("--> Thread OF WRITE tid[%ld] starting!! ** ENTERING CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
-  // sleep((rand() % 3 + 1));
+  // sleep((rand() % 20 + 1));
   sleep(4);
   
+  cont_op ++;
+  if (cont_op == 1) {
+    cont_op_semaphore.lock();
+  }
+
   time_now();
   printf("__TID[%ld]__ %d:%d:%d\t Writing data from PRODUCT_ID=[%d]. AMOUNT=[%d] -> [%d]\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec, product_id, stock[product_id].amount, stock[product_id].amount + quantity);
   stock[product_id].amount += quantity;
-  
+
+  cont_op --;
+  if (cont_op == 0) {
+    cont_op_semaphore.unlock();
+  }
+
   time_now();
   printf("XXX Thread OF WRITE tid[%ld] finished!! ** LEFTING  CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
   
@@ -125,6 +139,14 @@ int main() {
   int product_target = 1;
   // 0 read, 1 write
   int type_threads[] = { 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0};
+  
+  for (int i = 0; i < 5; i++) {
+    if (type_threads[i] == 1) {
+      writers ++;
+    } else {
+      readers ++;
+    }
+  }
 
   initStock();
   printStock();
