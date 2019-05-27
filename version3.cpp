@@ -13,6 +13,13 @@ using namespace std;
 #define STOCK_SIZE 5
 #define DEFAULT_AMOUNT 40
 #define STORES 12 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
 
 time_t rawtime;
 struct tm * timeinfo;
@@ -75,11 +82,11 @@ void *reader(void *args) {
     stock_mutex.lock();
   }
 
-  printf("--> Thread OF READ tid[%ld] starting!! ** ENTERING CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
+  printf(ANSI_COLOR_GREEN "[SYS][READ]->" ANSI_COLOR_RESET "TID[%ld] starting!!\n\t** ENTERING CRITIC REGION !!** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
   sleep(2);
   
   time_now();
-  printf("__TID[%ld]__ %d:%d:%d\tReading data from PRODUCT_ID=[%d]. AMOUNT=[%d]\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec, product_id, stock[product_id].amount);
+  printf(ANSI_COLOR_YELLOW "[RUNNING][READ]" ANSI_COLOR_RESET "->TID[%ld] %d:%d:%d\n\tReading data from PRODUCT_ID=[%d]. AMOUNT=[%d]\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec, product_id, stock[product_id].amount);
   
   cont_op --;
   if (cont_op == 0) {
@@ -87,7 +94,7 @@ void *reader(void *args) {
   }
 
   time_now();
-  printf("XXX Thread OF READ tid[%ld] finished!! ** LEFTING  CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
+  printf(ANSI_COLOR_RED "[SYS][READ]" ANSI_COLOR_RESET "Thread OF READ tid[%ld] finished!!\n\t** LEFTING  CRITIC REGION !!** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
   
   // sem_post(&stock_semaphore);
   cont_op_semaphore.unlock();
@@ -111,15 +118,16 @@ void *writer(void *args) {
   // sem_wait(&stock_semaphore);
   stock_mutex.lock();
 
-  printf("--> Thread OF WRITE tid[%ld] starting!! ** ENTERING CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
-  // sleep((rand() % 20 + 1));
+  printf(ANSI_COLOR_GREEN "[SYS][WRITE]->" ANSI_COLOR_RESET "TID[%ld] starting!!\n\t** ENTERING CRITIC REGION !!** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
+  // sleep((rand() % 3 + 1));
   sleep(4);
+  
   time_now();
-  printf("__TID[%ld]__ %d:%d:%d\t Writing data from PRODUCT_ID=[%d]. AMOUNT=[%d] -> [%d]\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec, product_id, stock[product_id].amount, stock[product_id].amount + quantity);
+  printf(ANSI_COLOR_YELLOW "[RUNNING][WRITE]->" ANSI_COLOR_RESET "TID[%ld] %d:%d:%d\n\tWriting data from PRODUCT_ID=[%d]. AMOUNT=[%d] -> [%d]\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec, product_id, stock[product_id].amount, stock[product_id].amount + quantity);
   stock[product_id].amount += quantity;
-
+  
   time_now();
-  printf("XXX Thread OF WRITE tid[%ld] finished!! ** LEFTING  CRITIC REGION !! ** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
+  printf(ANSI_COLOR_RED "[SYS][WRITE]->" ANSI_COLOR_RESET "TID[%ld] finished!!\n\t** LEFTING  CRITIC REGION !!** %d:%d:%d\n", thread_id, timeinfo->tm_hour, timeinfo->tm_hour, timeinfo->tm_sec);
   
   // sem_post(&stock_semaphore);
   stock_mutex.unlock();
