@@ -6,3 +6,6 @@ v2:
 
 v3:
 	g++ -pthread version3.cpp -o output && ./output < input
+
+barber-c++:
+	g++ barbeirodorminhoco.cpp -pthread -o barbeiros && ./barbeiros
