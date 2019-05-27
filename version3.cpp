@@ -7,6 +7,8 @@
 #include <ctime>    // For time()
 #include <cstdlib>  // For srand() and rand()
 #include <semaphore.h>
+#include <algorithm>
+#include <vector>
 
 using namespace std;
 
@@ -150,8 +152,22 @@ int main() {
 
   for (int i = 0; i < writers; ++i) {
     cin >> writes_op[i];
+    // cout << writes_op[i] << endl;
   }
 
+  vector<int> shuffled_ops;
+  for (int i = 0; i < writers; ++i) {
+    shuffled_ops.push_back(writes_op[i]);
+  }
+  for (int i = 0; i < readers; ++i) {
+    shuffled_ops.push_back(0);
+  }
+  random_shuffle ( shuffled_ops.begin(), shuffled_ops.end() );
+
+  // for (int i = 0; i < shuffled_ops.size(); ++i) {
+  //   cout << shuffled_ops[i] << " ";
+  // }
+  // cout << endl;
   initStock();
   printStock();
 
@@ -160,34 +176,24 @@ int main() {
 
   int tid = 0; // var to control thread id through w and r
 
-  for(int i = 0; i < readers; ++i) {
-    args = {
-      tid,
-      product_target,
-    };
-
-    stopper_flag = pthread_create(&stores[tid], NULL, reader, &args);
-
+  for(int i = 0; i < shuffled_ops.size(); ++i) {
+    if (shuffled_ops[i] == 0) {
+      args = {
+        tid,
+        product_target,
+      };
+      stopper_flag = pthread_create(&stores[tid], NULL, reader, &args);
+    } else {
+      args = {
+        tid,
+        product_target,
+        shuffled_ops[i], 
+      };
+      stopper_flag = pthread_create(&stores[tid], NULL, writer, &args);
+    }
     if (stopper_flag != 0) {
       cout << "Error creating thread " << tid << ". Return code:" << stopper_flag <<  endl;
     }
-    tid++;
-    sleep(0.0005);
-  }
-
-  for(int i = 0; i < writers; ++i) {
-    args = {
-      tid,
-      product_target,
-      writes_op[i], 
-    };
-
-    stopper_flag = pthread_create(&stores[tid], NULL, writer, &args);
-
-    if (stopper_flag != 0) {
-      cout << "Error creating thread " << tid << ". Return code:" << stopper_flag <<  endl;
-    }
-
     tid++;
     sleep(0.0005);
   }
